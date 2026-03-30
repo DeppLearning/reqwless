@@ -21,7 +21,7 @@ embedded-nal-async = "0.9.0"
 httparse = { version = "1.8.0", default-features = false }
 heapless = "0.9"
 hex = { version = "0.4", default-features = false }
-base64 = { version = "0.21.0", default-features = false }
+base64 = { version = "0.22.1", default-features = false }
 rand_core = { version = "0.6.3", default-features = true }
 log = { version = "0.4", optional = true }
 defmt = { version = "1.0.1", optional = true }
@@ -31,7 +31,9 @@ p256 = { version = "0.13", default-features = false, features = [
     "ecdsa",
     "sha256",
 ] }
-embedded-tls = { git = "https://github.com/drogue-iot/embedded-tls.git", rev = "dd97196dfd56c836b6267dc89f1fe618094f72a3", default-features = false, features = ["rustpki"], optional = true }
+# embedded-tls = { path ="../embedded-tls", version = "*", default-features = false, features = ["rustpki"], optional = true }
+# embedded-tls = { git = "https://github.com/drogue-iot/embedded-tls.git", rev = "dd97196dfd56c836b6267dc89f1fe618094f72a3", default-features = false, features = ["rustpki"], optional = true }
+embedded-tls = { git = "https://github.com/drogue-iot/embedded-tls.git", rev = "426f327", default-features = false, features = ["rustpki"], optional = true }
 rand_chacha = { version = "0.3", default-features = false }
 nourl = "0.1.2"
 mbedtls-rs = { version = "0.1", git = "https://github.com/esp-rs/mbedtls-rs.git", optional = true }
@@ -50,6 +52,7 @@ rand = "0.8"
 
 [features]
 default = ["embedded-tls"]
+client-cert = []
 esp-mbedtls = ["dep:mbedtls-rs"]
 rsa = ["embedded-tls?/alloc", "embedded-tls?/rsa"]
 p384 = ["embedded-tls?/p384"]

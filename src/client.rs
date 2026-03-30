@@ -11,14 +11,14 @@ use embedded_io::Error as _;
 use embedded_io::ErrorType;
 use embedded_io_async::{Read, Write};
 use embedded_nal_async::{Dns, TcpConnect};
-#[cfg(feature = "embedded-tls")]
+#[cfg(all(feature = "embedded-tls", feature = "client-cert"))]
 use embedded_tls::{
     Aes128GcmSha256, CryptoProvider, NoClock, SignatureScheme, TlsError, TlsVerifier, pki::CertVerifier,
 };
 use nourl::{Url, UrlScheme};
-#[cfg(feature = "embedded-tls")]
+#[cfg(all(feature = "embedded-tls", feature = "client-cert"))]
 use p256::ecdsa::{DerSignature, signature::SignerMut};
-#[cfg(feature = "embedded-tls")]
+#[cfg(all(feature = "embedded-tls", feature = "client-cert"))]
 use rand_core::CryptoRngCore;
 
 /// An async HTTP client that can establish a TCP connection and perform
@@ -56,14 +56,14 @@ pub struct TlsConfig<'a> {
     verify: TlsVerify<'a>,
 }
 
-#[cfg(feature = "embedded-tls")]
-struct Provider {
+#[cfg(all(feature = "embedded-tls", feature = "client-cert"))]
+struct Provider<'a> {
     rng: rand_chacha::ChaCha8Rng,
-    verifier: CertVerifier<Aes128GcmSha256, NoClock, 4096>,
+    verifier: CertVerifier<'a, Aes128GcmSha256, NoClock, 4096>,
 }
 
-#[cfg(feature = "embedded-tls")]
-impl CryptoProvider for Provider {
+#[cfg(all(feature = "embedded-tls", feature = "client-cert"))]
+impl <'a> CryptoProvider for Provider<'a> {
     type CipherSuite = Aes128GcmSha256;
     type Signature = DerSignature;
 
@@ -75,10 +75,10 @@ impl CryptoProvider for Provider {
         Ok(&mut self.verifier)
     }
 
-    fn signer(&mut self, key_der: &[u8]) -> Result<(impl SignerMut<Self::Signature>, SignatureScheme), TlsError> {
+    fn signer(&mut self) -> Result<(impl SignerMut<Self::Signature>, SignatureScheme), TlsError> {
         use p256::{SecretKey, ecdsa::SigningKey};
 
-        let secret_key = SecretKey::from_sec1_der(key_der).map_err(|_| TlsError::InvalidPrivateKey)?;
+        let secret_key = SecretKey::from_sec1_der(self.key_der).map_err(|_| TlsError::InvalidPrivateKey)?;
 
         Ok((SigningKey::from(&secret_key), SignatureScheme::EcdsaSecp256r1Sha256))
     }
@@ -91,6 +91,7 @@ pub enum TlsVerify<'a> {
     None,
     /// Use pre-shared keys for verifying
     Psk { identity: &'a [u8], psk: &'a [u8] },
+    #[cfg(feature = "client-cert")]
     /// Use certificates for verifying
     /// ca: CA cert in DER format
     /// cert: Optional client cert in DER format (needed only for client verification)
@@ -215,13 +216,14 @@ where
                         config = config.with_psk(psk, &[identity]);
                         conn.open(TlsContext::new(&config, UnsecureProvider::new(rng))).await?;
                     }
+                    #[cfg(all(feature = "embedded-tls", feature = "client-cert"))]
                     TlsVerify::Certificate { ca, cert, key } => {
                         use embedded_tls::Certificate;
-
-                        config = config.with_ca(Certificate::X509(ca));
+                      
+                        let mut cert_ = Certificate::X509(ca);
 
                         if let Some(cert) = cert {
-                            config = config.with_cert(Certificate::X509(cert));
+                            cert_ = Certificate::X509(cert);
                         }
 
                         if let Some(key) = key {
@@ -233,7 +235,7 @@ where
                             &config,
                             Provider {
                                 rng: rng,
-                                verifier: embedded_tls::pki::CertVerifier::new(),
+                                verifier: embedded_tls::pki::CertVerifier::new(cert),
                             },
                         ))
                         .await?;
