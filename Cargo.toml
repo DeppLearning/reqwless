@@ -24,17 +24,17 @@ hex = { version = "0.4", default-features = false }
 base64 = { version = "0.21.0", default-features = false }
 rand_core = { version = "0.6.3", default-features = true }
 log = { version = "0.4", optional = true }
-defmt = { version = "0.3", optional = true }
+defmt = { version = "1.0.1", optional = true }
 pkcs8 = "0.10.2"
 p256 = { version = "0.13", default-features = false, features = [
     "ecdh",
     "ecdsa",
     "sha256",
 ] }
-embedded-tls = { git = "https://github.com/drogue-iot/embedded-tls.git", default-features = false, features = ["rustpki"], optional = true }
+embedded-tls = { git = "https://github.com/drogue-iot/embedded-tls.git", rev = "dd97196dfd56c836b6267dc89f1fe618094f72a3", default-features = false, features = ["rustpki"], optional = true }
 rand_chacha = { version = "0.3", default-features = false }
 nourl = "0.1.2"
-esp-mbedtls = { version = "0.1", git = "https://github.com/esp-rs/esp-mbedtls.git", optional = true }
+mbedtls-rs = { version = "0.1", git = "https://github.com/esp-rs/mbedtls-rs.git", optional = true }
 
 [dev-dependencies]
 hyper = { version = "0.14.23", features = ["full"] }
@@ -50,6 +50,7 @@ rand = "0.8"
 
 [features]
 default = ["embedded-tls"]
+esp-mbedtls = ["dep:mbedtls-rs"]
 rsa = ["embedded-tls?/alloc", "embedded-tls?/rsa"]
 p384 = ["embedded-tls?/p384"]
 ed25519 = ["embedded-tls?/ed25519"]
